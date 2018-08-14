@@ -44,6 +44,7 @@ to quickly create a Cobra application.`,
 		jww.DEBUG.Println("update called")
 
 		repoDir := filepath.Join(viper.GetString("HomeDir"), "repo")
+		viper.Set("RepoDir", repoDir)
 		err := pullRepo(repoDir, viper.GetString("RepoRemote"))
 
 		switch err {
