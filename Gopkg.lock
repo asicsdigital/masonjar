@@ -247,6 +247,14 @@
   version = "v0.3.0"
 
 [[projects]]
+  digest = "1:c805e517269b0ba4c21ded5836019ed7d16953d4026cb7d00041d039c7906be9"
+  name = "gopkg.in/natefinch/lumberjack.v2"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "a96e63847dc3c67d17befa69c303767e2f84e54f"
+  version = "v2.1"
+
+[[projects]]
   digest = "1:fd4a663d6407f5fb9f7b41e1f0bdeaf744b6bf4e23e5cc463c34d6e39036229e"
   name = "gopkg.in/src-d/go-billy.v4"
   packages = [
@@ -333,6 +341,7 @@
     "github.com/spf13/cobra",
     "github.com/spf13/jwalterweatherman",
     "github.com/spf13/viper",
+    "gopkg.in/natefinch/lumberjack.v2",
     "gopkg.in/src-d/go-git.v4",
   ]
   solver-name = "gps-cdcl"

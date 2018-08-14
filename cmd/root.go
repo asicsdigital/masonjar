@@ -27,10 +27,12 @@ import (
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+	jww "github.com/spf13/jwalterweatherman"
 	"github.com/spf13/viper"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-var cfgFile string
+var cfgFile, logFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -64,9 +66,7 @@ func init() {
 	// will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/masonjar/masonjar.yaml)")
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().StringVar(&logFile, "logfile", "", "log file (default is $HOME/.config/masonjar/masonjar.log)")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -90,6 +90,7 @@ func initConfig() {
 	}
 
 	viper.BindPFlag("CfgFile", rootCmd.PersistentFlags().Lookup("config"))
+	viper.BindPFlag("LogFile", rootCmd.PersistentFlags().Lookup("logfile"))
 
 	viper.AutomaticEnv() // read in environment variables that match
 
@@ -100,6 +101,31 @@ func initConfig() {
 
 	// now that the config is read, derive the homedir
 	setMasonjarHomedir(viper.GetString("CfgFile"))
+
+	// configure logging
+	viper.SetDefault("LogFile", filenameInHomedir("masonjar.log"))
+	initLogging(viper.GetString("LogFile"))
+}
+
+func initLogging(logFile string) {
+	jww.SetLogOutput(&lumberjack.Logger{
+		Filename:   logFile,
+		MaxSize:    8,
+		MaxBackups: 3,
+		Compress:   true,
+	})
+
+	jww.INFO.Printf("configured logging to LogFile: %v", logFile)
+}
+
+func filenameInHomedir(fileName string) string {
+	homeDir := viper.GetString("HomeDir")
+
+	if len(homeDir) == 0 {
+		jww.ERROR.Panic("filenameInHomedir() called before setMasonjarHomedir()")
+	}
+
+	return filepath.Join(homeDir, fileName)
 }
 
 func setMasonjarHomedir(cfgFile string) string {
