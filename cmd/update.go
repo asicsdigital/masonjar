@@ -21,16 +21,14 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	jww "github.com/spf13/jwalterweatherman"
 	"github.com/spf13/viper"
 	"gopkg.in/src-d/go-git.v4"
 )
-
-var repository string
 
 // updateCmd represents the update command
 var updateCmd = &cobra.Command{
@@ -43,13 +41,24 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("update called")
+		jww.DEBUG.Println("update called")
 
 		repoDir := filepath.Join(viper.GetString("HomeDir"), "repo")
-		err := cloneRepo(repoDir, viper.GetString("RepoUrl"))
+		err := pullRepo(repoDir, viper.GetString("RepoRemote"))
+
+		switch err {
+		case git.NoErrAlreadyUpToDate:
+			jww.INFO.Println(err)
+			err = nil
+		case git.ErrRepositoryNotExists:
+			jww.INFO.Println(err)
+			err = cloneRepo(repoDir, viper.GetString("RepoUrl"))
+		default:
+			jww.ERROR.Println(err)
+		}
 
 		if err != nil {
-			fmt.Println(err)
+			jww.ERROR.Println(err)
 			os.Exit(1)
 		}
 	},
@@ -67,16 +76,41 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// updateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	updateCmd.Flags().StringVar(&repository, "repository", "", "Git repo containing masonjar definitions (default is https://github.com/asicsdigital/masonjars)")
+	updateCmd.Flags().String("repository", "", "Git repo containing masonjar definitions (default is https://github.com/asicsdigital/masonjars)")
 	viper.SetDefault("RepoUrl", "https://github.com/asicsdigital/masonjars")
 	viper.BindPFlag("RepoUrl", updateCmd.Flags().Lookup("repository"))
+
+	updateCmd.Flags().String("remote", "", "Remote of Git repo containing masonjar definitions (default is 'origin')")
+	viper.SetDefault("RepoRemote", "origin")
+	viper.BindPFlag("RepoRemote", updateCmd.Flags().Lookup("remote"))
 }
 
 func cloneRepo(destDir string, repoUrl string) error {
+	jww.DEBUG.Println("cloneRepo called")
 	_, err := git.PlainClone(destDir, false, &git.CloneOptions{
 		URL:      repoUrl,
 		Progress: os.Stderr,
 	})
 
+	jww.DEBUG.Println("cloneRepo returned")
+	return err
+}
+
+func pullRepo(destDir string, repoRemote string) error {
+	jww.DEBUG.Println("pullRepo called")
+	r, err := git.PlainOpen(destDir)
+
+	if err != nil {
+		return err
+	}
+
+	w, err := r.Worktree()
+
+	err = w.Pull(&git.PullOptions{
+		RemoteName: repoRemote,
+		Progress:   os.Stderr,
+	})
+
+	jww.DEBUG.Println("pullRepo returned")
 	return err
 }
