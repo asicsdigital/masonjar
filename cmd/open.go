@@ -64,16 +64,28 @@ func init() {
 }
 
 func parseJars(repoDir string) ([]jar.MasonJar, error) {
-	repoFS := newReadOnlyBasePathFs(repoDir)
-	jww.DEBUG.Printf("repoFS: %v", repoFS.Name())
+	fs := afero.NewBasePathFs(afero.NewOsFs(), repoDir)
+	afs := &afero.Afero{Fs: fs}
 
 	var jars []jar.MasonJar
 
-	jars = append(jars, jar.NewJar("foo"))
+	files, err := afs.ReadDir("/")
 
-	return jars, nil
-}
+	if err != nil {
+		jww.ERROR.Println(err)
+		return jars, err
+	}
 
-func newReadOnlyBasePathFs(basePath string) afero.Fs {
-	return afero.NewReadOnlyFs(afero.NewBasePathFs(afero.NewOsFs(), basePath))
+	for i := range files {
+		fileName, err := fs.(*afero.BasePathFs).RealPath(files[i].Name())
+		j, err := jar.NewJar(fileName)
+
+		if err == nil {
+			jars = append(jars, j)
+		} else {
+			jww.ERROR.Println(err)
+		}
+	}
+
+	return jars, err
 }

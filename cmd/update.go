@@ -43,8 +43,7 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		jww.DEBUG.Println("update called")
 
-		repoDir := filepath.Join(viper.GetString("HomeDir"), "repo")
-		viper.Set("RepoDir", repoDir)
+		repoDir := viper.GetString("RepoDir")
 		err := pullRepo(repoDir, viper.GetString("RepoRemote"))
 
 		switch err {
@@ -84,6 +83,10 @@ func init() {
 	updateCmd.Flags().String("remote", "", "Remote of Git repo containing masonjar definitions (default is 'origin')")
 	viper.SetDefault("RepoRemote", "origin")
 	viper.BindPFlag("RepoRemote", updateCmd.Flags().Lookup("remote"))
+
+	repoDir := filepath.Join(viper.GetString("HomeDir"), "repo")
+	jww.ERROR.Printf("setting RepoDir: %v", repoDir)
+	viper.Set("RepoDir", repoDir)
 }
 
 func cloneRepo(destDir string, repoUrl string) error {

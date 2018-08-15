@@ -103,7 +103,7 @@ func initConfig() {
 	setMasonjarHomedir(viper.GetString("CfgFile"))
 
 	// configure logging
-	viper.SetDefault("LogFile", filenameInHomedir("masonjar.log"))
+	viper.SetDefault("LogFile", FilenameInHomedir("masonjar.log"))
 	initLogging(viper.GetString("LogFile"))
 }
 
@@ -118,11 +118,11 @@ func initLogging(logFile string) {
 	jww.INFO.Printf("configured logging to LogFile: %v", logFile)
 }
 
-func filenameInHomedir(fileName string) string {
+func FilenameInHomedir(fileName string) string {
 	homeDir := viper.GetString("HomeDir")
 
 	if len(homeDir) == 0 {
-		jww.ERROR.Panic("filenameInHomedir() called before setMasonjarHomedir()")
+		jww.ERROR.Panic("FilenameInHomedir() called before setMasonjarHomedir()")
 	}
 
 	return filepath.Join(homeDir, fileName)

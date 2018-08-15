@@ -20,22 +20,43 @@
 
 package jar
 
-import ()
+import (
+	"fmt"
+	"path/filepath"
+)
 
 type MasonJar interface {
 	Name() string
+	Path() string
 }
 
 type masonJar struct {
 	name string
+	path string
 }
 
 func (j *masonJar) Name() string {
 	return j.name
 }
 
-func NewJar(name string) *masonJar {
+func (j *masonJar) Path() string {
+	return j.path
+}
+
+func NewJar(path string) (*masonJar, error) {
+	if !isValidJar(path) {
+		return nil, fmt.Errorf("%v is not a valid MasonJar directory", path)
+	}
+
 	j := new(masonJar)
+	j.path = path
+
+	_, name := filepath.Split(path)
+
 	j.name = name
-	return j
+	return j, nil
+}
+
+func isValidJar(path string) bool {
+	return true
 }
