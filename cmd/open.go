@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	jww "github.com/spf13/jwalterweatherman"
+	"github.com/spf13/viper"
 )
 
 // openCmd represents the open command
@@ -39,6 +40,12 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		jww.DEBUG.Println("open called")
+
+		jars, _ := parseJars(viper.GetString("RepoDir"))
+
+		for i := range jars {
+			jww.ERROR.Println(jars[i].Name())
+		}
 	},
 }
 
@@ -57,5 +64,16 @@ func init() {
 }
 
 func parseJars(repoDir string) ([]jar.MasonJar, error) {
-	repoFS := afero.NewOsFs()
+	repoFS := newReadOnlyBasePathFs(repoDir)
+	jww.DEBUG.Printf("repoFS: %v", repoFS.Name())
+
+	var jars []jar.MasonJar
+
+	jars = append(jars, jar.NewJar("foo"))
+
+	return jars, nil
+}
+
+func newReadOnlyBasePathFs(basePath string) afero.Fs {
+	return afero.NewReadOnlyFs(afero.NewBasePathFs(afero.NewOsFs(), basePath))
 }

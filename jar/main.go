@@ -26,16 +26,16 @@ type MasonJar interface {
 	Name() string
 }
 
-type jar struct {
+type masonJar struct {
 	name string
 }
 
-func (j *jar) Name() string {
+func (j *masonJar) Name() string {
 	return j.name
 }
 
-func NewJar(name string) MasonJar {
-	return &jar{
-		name: name,
-	}
+func NewJar(name string) *masonJar {
+	j := new(masonJar)
+	j.name = name
+	return j
 }
