@@ -21,6 +21,9 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/asicsdigital/masonjar/jar"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -44,7 +47,14 @@ to quickly create a Cobra application.`,
 		jars, _ := parseJars(viper.GetString("RepoDir"))
 
 		for i := range jars {
-			jww.ERROR.Println(jars[i].Name())
+			j := jars[i]
+			jww.INFO.Printf("processing jar %v", j.Name())
+
+			err := j.Walk(jarWalkFunc)
+
+			if err != nil {
+				jww.ERROR.Printf("error walking jar %v: %v", j.Path(), err)
+			}
 		}
 	},
 }
@@ -63,6 +73,30 @@ func init() {
 	// openCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	openCmd.Flags().String("identifier", "", "Identifier for the jar to be created")
 	viper.BindPFlag("JarIdentifier", openCmd.Flags().Lookup("identifier"))
+}
+
+func jarWalkFunc(path string, info os.FileInfo, err error) error {
+	if err != nil {
+		jww.WARN.Printf("error walking path %v: %v", path, err)
+		return filepath.SkipDir
+	}
+
+	if isSkippable(path) {
+		jww.INFO.Printf("skipping %v", path)
+		return nil
+	}
+
+	jww.INFO.Println(path)
+	return nil
+}
+
+func isSkippable(path string) bool {
+	switch path {
+	case "/", filepath.Join("/", jar.MetadataFileName):
+		return true
+	default:
+		return false
+	}
 }
 
 func parseJars(repoDir string) ([]jar.MasonJar, error) {

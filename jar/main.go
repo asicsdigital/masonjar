@@ -33,6 +33,7 @@ const MetadataFileName = "metadata.json"
 type MasonJar interface {
 	Name() string
 	Path() string
+	Walk(filepath.WalkFunc) error
 }
 
 type masonJar struct {
@@ -46,6 +47,15 @@ func (j *masonJar) Name() string {
 
 func (j *masonJar) Path() string {
 	return j.path
+}
+
+func (j *masonJar) Walk(walkFn filepath.WalkFunc) error {
+	fs := afero.NewBasePathFs(afero.NewOsFs(), j.Path())
+	afs := &afero.Afero{Fs: fs}
+
+	err := afs.Walk("/", walkFn)
+
+	return err
 }
 
 func NewJar(path string) (*masonJar, error) {
