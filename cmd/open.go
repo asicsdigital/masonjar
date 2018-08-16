@@ -61,10 +61,12 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// openCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	openCmd.Flags().String("identifier", "", "Identifier for the jar to be created")
+	viper.BindPFlag("JarIdentifier", openCmd.Flags().Lookup("identifier"))
 }
 
 func parseJars(repoDir string) ([]jar.MasonJar, error) {
-	fs := afero.NewBasePathFs(afero.NewOsFs(), repoDir)
+	fs := afero.NewBasePathFs(afero.NewReadOnlyFs(afero.NewOsFs()), repoDir)
 	afs := &afero.Afero{Fs: fs}
 
 	var jars []jar.MasonJar
@@ -81,9 +83,10 @@ func parseJars(repoDir string) ([]jar.MasonJar, error) {
 		j, err := jar.NewJar(fileName)
 
 		if err == nil {
+			jww.INFO.Printf("parsed %v as MasonJar %v", j.Path(), j.Name())
 			jars = append(jars, j)
 		} else {
-			jww.ERROR.Println(err)
+			jww.WARN.Println(err)
 		}
 	}
 

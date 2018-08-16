@@ -23,7 +23,12 @@ package jar
 import (
 	"fmt"
 	"path/filepath"
+
+	"github.com/spf13/afero"
+	jww "github.com/spf13/jwalterweatherman"
 )
+
+const MetadataFileName = "metadata.json"
 
 type MasonJar interface {
 	Name() string
@@ -58,5 +63,15 @@ func NewJar(path string) (*masonJar, error) {
 }
 
 func isValidJar(path string) bool {
+	fs := afero.NewBasePathFs(afero.NewReadOnlyFs(afero.NewOsFs()), path)
+
+	_, err := fs.(*afero.BasePathFs).Open(filepath.Join("/", MetadataFileName))
+
+	if err != nil {
+		dirRealPath, _ := fs.(*afero.BasePathFs).RealPath("/")
+		jww.WARN.Printf("directory %v has no metadata file %v", dirRealPath, MetadataFileName)
+		return false
+	}
+
 	return true
 }

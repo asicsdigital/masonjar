@@ -85,7 +85,7 @@ func init() {
 	viper.BindPFlag("RepoRemote", updateCmd.Flags().Lookup("remote"))
 
 	repoDir := filepath.Join(viper.GetString("HomeDir"), "repo")
-	jww.ERROR.Printf("setting RepoDir: %v", repoDir)
+	jww.DEBUG.Printf("setting RepoDir: %v", repoDir)
 	viper.Set("RepoDir", repoDir)
 }
 
