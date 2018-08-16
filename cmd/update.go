@@ -22,7 +22,6 @@ package cmd
 
 import (
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 	jww "github.com/spf13/jwalterweatherman"
@@ -83,10 +82,6 @@ func init() {
 	updateCmd.Flags().String("remote", "", "Remote of Git repo containing masonjar definitions (default is 'origin')")
 	viper.SetDefault("RepoRemote", "origin")
 	viper.BindPFlag("RepoRemote", updateCmd.Flags().Lookup("remote"))
-
-	repoDir := filepath.Join(viper.GetString("HomeDir"), "repo")
-	jww.DEBUG.Printf("setting RepoDir: %v", repoDir)
-	viper.Set("RepoDir", repoDir)
 }
 
 func cloneRepo(destDir string, repoUrl string) error {

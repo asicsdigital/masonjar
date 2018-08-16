@@ -67,6 +67,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/masonjar/masonjar.yaml)")
 
 	rootCmd.PersistentFlags().StringVar(&logFile, "logfile", "", "log file (default is $HOME/.config/masonjar/masonjar.log)")
+
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose logging")
+	viper.BindPFlag("IsVerbose", rootCmd.PersistentFlags().Lookup("verbose"))
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -105,6 +108,9 @@ func initConfig() {
 	// configure logging
 	viper.SetDefault("LogFile", FilenameInHomedir("masonjar.log"))
 	initLogging(viper.GetString("LogFile"))
+
+	// derive repository path
+	viper.Set("RepoDir", FilenameInHomedir("repo"))
 }
 
 func initLogging(logFile string) {
@@ -116,6 +122,11 @@ func initLogging(logFile string) {
 	})
 
 	jww.INFO.Printf("configured logging to LogFile: %v", logFile)
+
+	if viper.GetBool("IsVerbose") {
+		jww.SetLogThreshold(jww.LevelTrace)
+		jww.SetStdoutThreshold(jww.LevelDebug)
+	}
 }
 
 func FilenameInHomedir(fileName string) string {
@@ -129,7 +140,9 @@ func FilenameInHomedir(fileName string) string {
 }
 
 func setMasonjarHomedir(cfgFile string) string {
+	jww.ERROR.Printf("cfgFile: %v", cfgFile)
 	dir, _ := filepath.Split(cfgFile)
+	jww.ERROR.Printf("dir: %v", dir)
 	viper.Set("HomeDir", dir)
 	return viper.GetString("HomeDir")
 }
