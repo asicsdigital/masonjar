@@ -140,9 +140,7 @@ func FilenameInHomedir(fileName string) string {
 }
 
 func setMasonjarHomedir(cfgFile string) string {
-	jww.ERROR.Printf("cfgFile: %v", cfgFile)
 	dir, _ := filepath.Split(cfgFile)
-	jww.ERROR.Printf("dir: %v", dir)
 	viper.Set("HomeDir", dir)
 	return viper.GetString("HomeDir")
 }

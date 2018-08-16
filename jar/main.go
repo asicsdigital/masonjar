@@ -85,3 +85,31 @@ func isValidJar(path string) bool {
 
 	return true
 }
+
+func ParseJars(repoDir string) ([]MasonJar, error) {
+	fs := afero.NewBasePathFs(afero.NewReadOnlyFs(afero.NewOsFs()), repoDir)
+	afs := &afero.Afero{Fs: fs}
+
+	var jars []MasonJar
+
+	files, err := afs.ReadDir("/")
+
+	if err != nil {
+		jww.ERROR.Println(err)
+		return jars, err
+	}
+
+	for i := range files {
+		fileName, err := fs.(*afero.BasePathFs).RealPath(files[i].Name())
+		j, err := NewJar(fileName)
+
+		if err == nil {
+			jww.INFO.Printf("parsed %v as MasonJar %v", j.Path(), j.Name())
+			jars = append(jars, j)
+		} else {
+			jww.WARN.Println(err)
+		}
+	}
+
+	return jars, err
+}
