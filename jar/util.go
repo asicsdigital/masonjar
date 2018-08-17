@@ -21,52 +21,51 @@
 package jar
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"github.com/spf13/afero"
+	jww "github.com/spf13/jwalterweatherman"
 )
 
-const MetadataFileName = "metadata.json"
+func isValidJar(path string) bool {
+	fs := afero.NewBasePathFs(afero.NewReadOnlyFs(afero.NewOsFs()), path)
 
-type Jar interface {
-	Name() string
-	Path() string
-	Walk(filepath.WalkFunc) error
-}
+	_, err := fs.(*afero.BasePathFs).Open(filepath.Join("/", MetadataFileName))
 
-type MasonJar struct {
-	name string
-	path string
-}
-
-func (j *MasonJar) Name() string {
-	return j.name
-}
-
-func (j *MasonJar) Path() string {
-	return j.path
-}
-
-func (j *MasonJar) Walk(walkFn filepath.WalkFunc) error {
-	fs := afero.NewBasePathFs(afero.NewOsFs(), j.Path())
-	afs := &afero.Afero{Fs: fs}
-
-	err := afs.Walk("/", walkFn)
-
-	return err
-}
-
-func NewJar(path string) (*MasonJar, error) {
-	if !isValidJar(path) {
-		return nil, fmt.Errorf("%v is not a valid Jar directory", path)
+	if err != nil {
+		dirRealPath, _ := fs.(*afero.BasePathFs).RealPath("/")
+		jww.WARN.Printf("directory %v has no metadata file %v", dirRealPath, MetadataFileName)
+		return false
 	}
 
-	j := new(MasonJar)
-	j.path = path
+	return true
+}
 
-	_, name := filepath.Split(path)
+func ParseJars(repoDir string) ([]Jar, error) {
+	jww.DEBUG.Printf("parsing jars from %v", repoDir)
+	fs := afero.NewBasePathFs(afero.NewReadOnlyFs(afero.NewOsFs()), repoDir)
+	afs := &afero.Afero{Fs: fs}
 
-	j.name = name
-	return j, nil
+	var jars []Jar
+
+	files, err := afs.ReadDir("/")
+
+	if err != nil {
+		jww.ERROR.Println(err)
+		return jars, err
+	}
+
+	for i := range files {
+		fileName, err := fs.(*afero.BasePathFs).RealPath(files[i].Name())
+		j, err := NewJar(fileName)
+
+		if err == nil {
+			jww.INFO.Printf("parsed %v as Jar %v", j.Path(), j.Name())
+			jars = append(jars, j)
+		} else {
+			jww.WARN.Println(err)
+		}
+	}
+
+	return jars, err
 }
