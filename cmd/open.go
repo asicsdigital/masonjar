@@ -35,50 +35,21 @@ import (
 // openCmd represents the open command
 var openCmd = &cobra.Command{
 	Use:   "open",
-	Short: "Create a new directory based on an existing Jar",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Create a new directory based on an existing jar",
+	Long: `Create a new directory by making a copy of an existing jar.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Required parameters are --jar (which must match one of the jar names output by
+"masonjar list") and -identifier (a unique identifier for the copy of the jar).`,
 	Run: func(cmd *cobra.Command, args []string) {
 		jww.DEBUG.Println("open called")
 
 		jars, _ := jar.ParseJars(viper.GetString("RepoDir"))
 
-		for i := range jars {
-			j := jars[i]
+		targetJar := viper.GetString("JarSource")
 
-			if j.Name() == viper.GetString("JarSource") {
-				jww.INFO.Printf("opening jar %v", j.Name())
-				viper.Set("CurrentJarName", j.Name())
-				viper.Set("CurrentJarPath", j.Path())
-
-				destFs := afero.NewOsFs()
-				dfs := &afero.Afero{Fs: destFs}
-				destDir := filepath.Join(viper.GetString("JarDestination"), viper.GetString("JarIdentifier"))
-				viper.Set("DestRoot", destDir)
-
-				jww.DEBUG.Printf("creating destination directory %v", destDir)
-				err := destFs.(*afero.OsFs).MkdirAll(destDir, 0700)
-
-				if err != nil {
-					jww.ERROR.Printf("error creating destination directory %v: %v", destDir, err)
-				}
-
-				dirCreated, err := dfs.IsDir(destDir)
-
-				if dirCreated {
-					err = j.Walk(jarWalkFunc)
-
-					if err != nil {
-						jww.ERROR.Printf("error walking jar %v: %v", j.Path(), err)
-					}
-				} else {
-					jww.ERROR.Panic(err)
-				}
-			}
+		if !matchJar(targetJar, jars) {
+			jww.ERROR.Printf("Unable to find a jar matching '%v'.  Use `masonjar list` to list available jars.", targetJar)
+			os.Exit(1)
 		}
 	},
 }
@@ -95,15 +66,57 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// openCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	openCmd.Flags().String("jar", "", "Name of the jar to be used as a src")
+	openCmd.Flags().String("jar", "", "Name of the jar to be used as a source (required)")
+	openCmd.MarkFlagRequired("jar")
 	viper.BindPFlag("JarSource", openCmd.Flags().Lookup("jar"))
 
-	openCmd.Flags().String("identifier", "", "Identifier for the jar to be created")
+	openCmd.Flags().String("identifier", "", "Identifier for the jar to be created (required)")
+	openCmd.MarkFlagRequired("identifier")
 	viper.BindPFlag("JarIdentifier", openCmd.Flags().Lookup("identifier"))
 
 	openCmd.Flags().String("destination", ".", "Path in local filesystem where jar will be created")
 	viper.BindPFlag("JarDestination", openCmd.Flags().Lookup("destination"))
 
+}
+
+func matchJar(target string, jars []jar.Jar) bool {
+	jww.DEBUG.Print("matching %v against %v jars", target, len(jars))
+
+	matchedJar := false
+
+	for i := range jars {
+		j := jars[i]
+
+		if j.Name() == target {
+			jww.INFO.Printf("opening jar %v", j.Name())
+			matchedJar = true
+			viper.Set("CurrentJarName", j.Name())
+			viper.Set("CurrentJarPath", j.Path())
+
+			destFs := afero.NewOsFs()
+			dfs := &afero.Afero{Fs: destFs}
+			destDir := filepath.Join(viper.GetString("JarDestination"), viper.GetString("JarIdentifier"))
+			viper.Set("DestRoot", destDir)
+
+			dirExists, err := dfs.DirExists(destDir)
+			if !dirExists {
+				jww.DEBUG.Printf("creating destination directory %v", destDir)
+				err := destFs.(*afero.OsFs).MkdirAll(destDir, 0700)
+
+				if err != nil {
+					jww.ERROR.Printf("error creating destination directory %v: %v", destDir, err)
+				}
+			}
+
+			err = j.Walk(jarWalkFunc)
+
+			if err != nil {
+				jww.ERROR.Printf("error walking jar %v: %v", j.Path(), err)
+			}
+		}
+	}
+
+	return matchedJar
 }
 
 func jarWalkFunc(path string, info os.FileInfo, err error) error {
@@ -170,6 +183,9 @@ func processJarPath(path string, srcFs afero.Fs, destFs afero.Fs) error {
 		jww.ERROR.Println(err)
 		return err
 	}
+
+	fileInfo, _ := srcFs.(*afero.BasePathFs).Stat(path)
+	err = destFs.(*afero.BasePathFs).Chmod(path, fileInfo.Mode())
 
 	return err
 }

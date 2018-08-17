@@ -33,12 +33,7 @@ import (
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Get the latest masonjar definitions",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Long:  `Update jar definitions from GitHub.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		jww.DEBUG.Println("update called")
 
@@ -46,6 +41,7 @@ to quickly create a Cobra application.`,
 		err := pullRepo(repoDir, viper.GetString("RepoRemote"))
 
 		switch err {
+		case nil:
 		case git.NoErrAlreadyUpToDate:
 			jww.INFO.Println(err)
 			err = nil

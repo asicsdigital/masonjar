@@ -33,12 +33,9 @@ import (
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List available jars",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Long: `List jars downloaded from the Git repository.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Use "masonjar update" to download the latest versions.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		jww.DEBUG.Println("list called")
 

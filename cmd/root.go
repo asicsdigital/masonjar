@@ -22,31 +22,47 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	jww "github.com/spf13/jwalterweatherman"
 	"github.com/spf13/viper"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"os"
+	"path/filepath"
 )
+
+const AppVersion = "0.1.0"
+const EnvPrefix = "masonjar"
 
 var cfgFile, logFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "masonjar",
-	Short: "A tool for provisioning canned workflows",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Version: AppVersion,
+	Use:     "masonjar",
+	Short:   "A tool for provisioning canned workflows",
+	Long: `MasonJar provides a command-line interface to "canned"
+workflows.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
+The first time you use MasonJar, you'll need to pull the latest
+jar definitions from GitHub, like so:
+
+$ masonjar update
+
+Once you've done so, list the available jars:
+
+$ masonjar list
+hello-world
+
+To deploy one of the jars:
+
+$ masonjar open \
+--jar hello-world
+--identifier jarhead
+--destination ~/work
+
+This will create the directory "~/work/jarhead", populated
+with the contents of the hello-world jar.`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -95,7 +111,8 @@ func initConfig() {
 	viper.BindPFlag("CfgFile", rootCmd.PersistentFlags().Lookup("config"))
 	viper.BindPFlag("LogFile", rootCmd.PersistentFlags().Lookup("logfile"))
 
-	viper.AutomaticEnv() // read in environment variables that match
+	viper.SetEnvPrefix(EnvPrefix)
+	viper.AutomaticEnv() // read in environment variables that match EnvPrefix_
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {

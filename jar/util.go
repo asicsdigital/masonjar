@@ -30,11 +30,11 @@ import (
 func isValidJar(path string) bool {
 	fs := afero.NewBasePathFs(afero.NewReadOnlyFs(afero.NewOsFs()), path)
 
-	_, err := fs.(*afero.BasePathFs).Open(filepath.Join("/", MetadataFileName))
+	_, err := fs.(*afero.BasePathFs).Stat(filepath.Join("/", MetadataFileName))
 
 	if err != nil {
 		dirRealPath, _ := fs.(*afero.BasePathFs).RealPath("/")
-		jww.WARN.Printf("directory %v has no metadata file %v", dirRealPath, MetadataFileName)
+		jww.DEBUG.Printf("directory %v has no metadata file %v", dirRealPath, MetadataFileName)
 		return false
 	}
 
