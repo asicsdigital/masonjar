@@ -31,6 +31,7 @@ import (
 type Jar interface {
 	Name() string
 	Path() string
+	Prefix() string
 	Metadata() *viper.Viper
 	ParseMetadata(string) (*viper.Viper, error)
 	Walk(filepath.WalkFunc) error
@@ -52,6 +53,10 @@ func (j *MasonJar) Path() string {
 
 func (j *MasonJar) Metadata() *viper.Viper {
 	return j.metadata
+}
+
+func (j *MasonJar) Prefix() string {
+	return j.Metadata().GetString("prefix")
 }
 
 func (j *MasonJar) Walk(walkFn filepath.WalkFunc) error {

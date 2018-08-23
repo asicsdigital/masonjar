@@ -25,6 +25,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/asicsdigital/masonjar/jar"
 	"github.com/spf13/afero"
@@ -97,7 +98,7 @@ func matchJar(target string, jars []jar.Jar) bool {
 
 			destFs := afero.NewOsFs()
 			dfs := &afero.Afero{Fs: destFs}
-			destDir := filepath.Join(viper.GetString("JarDestination"), viper.GetString("JarIdentifier"))
+			destDir := filepath.Join(viper.GetString("JarDestination"), strings.Join([]string{j.Prefix(), viper.GetString("JarIdentifier")}, ""))
 			viper.Set("DestRoot", destDir)
 
 			dirExists, err := dfs.DirExists(destDir)
