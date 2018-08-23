@@ -21,35 +21,5 @@
 package jar
 
 import (
-	"github.com/spf13/afero"
-	jww "github.com/spf13/jwalterweatherman"
+// "text/template"
 )
-
-func ParseJars(repoDir string) ([]Jar, error) {
-	jww.DEBUG.Printf("parsing jars from %v", repoDir)
-	fs := afero.NewBasePathFs(afero.NewReadOnlyFs(afero.NewOsFs()), repoDir)
-	afs := &afero.Afero{Fs: fs}
-
-	var jars []Jar
-
-	files, err := afs.ReadDir("/")
-
-	if err != nil {
-		jww.ERROR.Println(err)
-		return jars, err
-	}
-
-	for i := range files {
-		fileName, err := fs.(*afero.BasePathFs).RealPath(files[i].Name())
-		j, err := NewJar(fileName)
-
-		if err == nil {
-			jww.INFO.Printf("parsed %v as jar %v", j.Path(), j.Name())
-			jars = append(jars, j)
-		} else {
-			jww.WARN.Println(err)
-		}
-	}
-
-	return jars, err
-}

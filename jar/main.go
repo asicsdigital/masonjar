@@ -25,19 +25,21 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/afero"
+	"github.com/spf13/viper"
 )
-
-const MetadataFileName = "metadata.json"
 
 type Jar interface {
 	Name() string
 	Path() string
+	Metadata() *viper.Viper
+	ParseMetadata(string) (*viper.Viper, error)
 	Walk(filepath.WalkFunc) error
 }
 
 type MasonJar struct {
-	name string
-	path string
+	name     string
+	path     string
+	metadata *viper.Viper
 }
 
 func (j *MasonJar) Name() string {
@@ -46,6 +48,10 @@ func (j *MasonJar) Name() string {
 
 func (j *MasonJar) Path() string {
 	return j.path
+}
+
+func (j *MasonJar) Metadata() *viper.Viper {
+	return j.metadata
 }
 
 func (j *MasonJar) Walk(walkFn filepath.WalkFunc) error {
@@ -58,15 +64,19 @@ func (j *MasonJar) Walk(walkFn filepath.WalkFunc) error {
 }
 
 func NewJar(path string) (*MasonJar, error) {
-	if !isValidJar(path) {
-		return nil, fmt.Errorf("%v is not a valid Jar directory", path)
-	}
-
 	j := new(MasonJar)
 	j.path = path
 
 	_, name := filepath.Split(path)
 
 	j.name = name
-	return j, nil
+
+	metadata, err := j.ParseMetadata(MetadataFileName)
+
+	if err != nil {
+		return nil, fmt.Errorf("%v is not a valid Jar directory", path)
+	}
+
+	j.metadata = metadata
+	return j, err
 }

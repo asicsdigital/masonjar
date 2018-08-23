@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -80,7 +81,7 @@ func init() {
 }
 
 func matchJar(target string, jars []jar.Jar) bool {
-	jww.DEBUG.Print("matching %v against %v jars", target, len(jars))
+	jww.DEBUG.Printf("matching %v against %v jars", target, len(jars))
 
 	matchedJar := false
 
@@ -92,6 +93,7 @@ func matchJar(target string, jars []jar.Jar) bool {
 			matchedJar = true
 			viper.Set("CurrentJarName", j.Name())
 			viper.Set("CurrentJarPath", j.Path())
+			viper.Set("CurrentJarMetadata", j.Metadata())
 
 			destFs := afero.NewOsFs()
 			dfs := &afero.Afero{Fs: destFs}
@@ -151,7 +153,9 @@ func processJarPath(path string, srcFs afero.Fs, destFs afero.Fs) error {
 		return destFs.(*afero.BasePathFs).Mkdir(path, fileMode)
 	}
 
-	if isTemplate(path) {
+	metadata := viper.Get("CurrentJarMetadata").(*viper.Viper)
+
+	if isTemplate(path, metadata) {
 		return nil
 	}
 
@@ -190,8 +194,17 @@ func processJarPath(path string, srcFs afero.Fs, destFs afero.Fs) error {
 	return err
 }
 
-func isTemplate(path string) bool {
-	return false
+func isTemplate(path string, metadata *viper.Viper) bool {
+	filename := filepath.Base(path)
+	template_spec := fmt.Sprintf("%s.%s", "templates", filename)
+
+	if !metadata.IsSet(template_spec) {
+		jww.DEBUG.Printf("no template specification for %v", template_spec)
+		return false
+	}
+
+	jww.INFO.Printf("found template specification for %v", template_spec)
+	return true
 }
 
 func isSkippable(path string) bool {

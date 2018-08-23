@@ -21,35 +21,28 @@
 package jar
 
 import (
-	"github.com/spf13/afero"
 	jww "github.com/spf13/jwalterweatherman"
+	"github.com/spf13/viper"
 )
 
-func ParseJars(repoDir string) ([]Jar, error) {
-	jww.DEBUG.Printf("parsing jars from %v", repoDir)
-	fs := afero.NewBasePathFs(afero.NewReadOnlyFs(afero.NewOsFs()), repoDir)
-	afs := &afero.Afero{Fs: fs}
+const MetadataFileName = "metadata"
 
-	var jars []Jar
+func (j *MasonJar) ParseMetadata(filename string) (*viper.Viper, error) {
+	path := j.Path()
 
-	files, err := afs.ReadDir("/")
+	jww.DEBUG.Printf("parsing metadata for jar %v (path: %v, filename: %v)", j.Name(), path, filename)
+
+	config := viper.New()
+
+	config.SetConfigName(filename)
+	config.AddConfigPath(j.Path())
+
+	err := config.ReadInConfig()
 
 	if err != nil {
-		jww.ERROR.Println(err)
-		return jars, err
+		jww.WARN.Printf("unable to parse metadata: %v", err)
+		return nil, err
 	}
 
-	for i := range files {
-		fileName, err := fs.(*afero.BasePathFs).RealPath(files[i].Name())
-		j, err := NewJar(fileName)
-
-		if err == nil {
-			jww.INFO.Printf("parsed %v as jar %v", j.Path(), j.Name())
-			jars = append(jars, j)
-		} else {
-			jww.WARN.Println(err)
-		}
-	}
-
-	return jars, err
+	return config, err
 }
