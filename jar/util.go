@@ -21,6 +21,7 @@
 package jar
 
 import (
+	"io"
 	"path/filepath"
 	"strings"
 
@@ -97,4 +98,42 @@ func ParseJars(repoDir string) ([]Jar, error) {
 	}
 
 	return jars, err
+}
+
+func CopyFile(path string, srcFs afero.Fs, destFs afero.Fs) error {
+	jww.DEBUG.Printf("copying path %v", path)
+
+	srcFile, err := srcFs.(*afero.BasePathFs).Open(path)
+
+	if err != nil {
+		jww.ERROR.Println(err)
+		return err
+	}
+
+	destFile, err := destFs.(*afero.BasePathFs).Create(path)
+
+	if err != nil {
+		jww.ERROR.Println(err)
+		return err
+	}
+
+	written, err := io.Copy(destFile, srcFile)
+
+	if err != nil {
+		srcRealPath, _ := srcFs.(*afero.BasePathFs).RealPath(path)
+		destRealPath, _ := destFs.(*afero.BasePathFs).RealPath(path)
+		jww.DEBUG.Printf("copied %v to %v, %v bytes", srcRealPath, destRealPath, written)
+	}
+
+	err = destFile.Sync()
+
+	if err != nil {
+		jww.ERROR.Println(err)
+		return err
+	}
+
+	fileInfo, _ := srcFs.(*afero.BasePathFs).Stat(path)
+	err = destFs.(*afero.BasePathFs).Chmod(path, fileInfo.Mode())
+
+	return err
 }

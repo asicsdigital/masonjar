@@ -22,7 +22,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 
@@ -118,37 +117,7 @@ func processJarPath(path string, srcFs afero.Fs, destFs afero.Fs) error {
 		return nil
 	}
 
-	srcFile, err := srcFs.(*afero.BasePathFs).Open(path)
-
-	if err != nil {
-		jww.ERROR.Println(err)
-		return err
-	}
-
-	destFile, err := destFs.(*afero.BasePathFs).Create(path)
-
-	if err != nil {
-		jww.ERROR.Println(err)
-		return err
-	}
-
-	written, err := io.Copy(destFile, srcFile)
-
-	if err != nil {
-		srcRealPath, _ := srcFs.(*afero.BasePathFs).RealPath(path)
-		destRealPath, _ := destFs.(*afero.BasePathFs).RealPath(path)
-		jww.DEBUG.Printf("copied %v to %v, %v bytes", srcRealPath, destRealPath, written)
-	}
-
-	err = destFile.Sync()
-
-	if err != nil {
-		jww.ERROR.Println(err)
-		return err
-	}
-
-	fileInfo, _ := srcFs.(*afero.BasePathFs).Stat(path)
-	err = destFs.(*afero.BasePathFs).Chmod(path, fileInfo.Mode())
+	err = jar.CopyFile(path, srcFs, destFs)
 
 	return err
 }
@@ -167,8 +136,19 @@ func isTemplate(path string, metadata *viper.Viper) bool {
 }
 
 func isSkippable(path string) bool {
+	metadataMatch, err := filepath.Match(fmt.Sprintf("/%s.*", jar.MetadataFileName), path)
+
+	if err != nil {
+		jww.WARN.Println(err)
+		return false
+	}
+
+	if metadataMatch {
+		return true
+	}
+
 	switch path {
-	case "/", filepath.Join("/", jar.MetadataFileName):
+	case "/", "/templates":
 		return true
 	default:
 		return false
