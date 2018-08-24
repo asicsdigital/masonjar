@@ -105,6 +105,7 @@ func processJarPath(path string, srcFs afero.Fs, destFs afero.Fs) error {
 	sfs := &afero.Afero{Fs: srcFs}
 	isDir, err := sfs.IsDir(path)
 
+	// create directories and set mode
 	if isDir {
 		fileInfo, _ := srcFs.(*afero.BasePathFs).Stat(path)
 		fileMode := fileInfo.Mode()
@@ -113,10 +114,12 @@ func processJarPath(path string, srcFs afero.Fs, destFs afero.Fs) error {
 
 	metadata := viper.Get("CurrentJarMetadata").(*viper.Viper)
 
+	// process templates
 	if isTemplate(path, metadata) {
-		return nil
+		return jar.ProcessTemplate(path, metadata)
 	}
 
+	// copy non-template files
 	err = jar.CopyFile(path, srcFs, destFs)
 
 	return err

@@ -137,3 +137,7 @@ func CopyFile(path string, srcFs afero.Fs, destFs afero.Fs) error {
 
 	return err
 }
+
+func ProcessTemplate(path string, metadata *viper.Viper) error {
+	return nil
+}
